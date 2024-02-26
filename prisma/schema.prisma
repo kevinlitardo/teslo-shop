@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Size {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+  XXXL
+}
+
+enum Gender {
+  men
+  women
+  kid
+  unisex
+}
+
+enum Role {
+  admin
+  user
+}
+
+model Category {
+  id      String    @id @default(uuid())
+  name    String    @unique
+  product Product[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  in_stock    Int
+  price       Float    @default(0)
+  sizes       Size[]   @default([])
+  slug        String   @unique
+  tags        String[] @default([])
+  gender      Gender
+
+  category    Category @relation(fields: [category_id], references: [id])
+  category_id String
+
+  product_image ProductImage[]
+  order_item    OrderItem[]
+
+  @@index([gender])
+}
+
+model ProductImage {
+  id  String @id @default(uuid())
+  url String
+
+  product    Product @relation(fields: [product_id], references: [id])
+  product_id String
+}
+
+model User {
+  id             String       @id @default(uuid())
+  name           String
+  email          String       @unique
+  email_verified DateTime?
+  password       String
+  role           Role         @default(user)
+  image          String?
+  address        UserAddress?
+  order          Order[]
+}
+
+model Country {
+  id            String         @id
+  name          String
+  user_address  UserAddress[]
+  order_address OrderAddress[]
+}
+
+model UserAddress {
+  id          String @id @default(uuid())
+  first_name  String
+  last_name   String
+  address     String
+  address2    String
+  postal_code String
+  city        String
+  phone       String
+
+  // Relación
+  country    Country @relation(fields: [country_id], references: [id])
+  country_id String
+  user       User    @relation(fields: [user_id], references: [id])
+  user_id    String  @unique
+}
+
+model Order {
+  id         String    @id @default(uuid())
+  sub_total  Float
+  tax        Float
+  total      Float
+  quantity   Int
+  is_paid    Boolean   @default(false)
+  paid_at    DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  // relaciones
+  user          User          @relation(fields: [user_id], references: [id])
+  user_id       String
+  order_items   OrderItem[]
+  order_address OrderAddress?
+
+  transaction_id String?
+}
+
+model OrderItem {
+  id       String @id @default(uuid())
+  quantity Int
+  price    Float
+  size     Size
+
+  // relaciones
+  order      Order   @relation(fields: [order_id], references: [id])
+  order_id   String
+  product    Product @relation(fields: [product_id], references: [id])
+  product_id String
+}
+
+model OrderAddress {
+  id          String  @id @default(uuid())
+  first_name  String
+  last_name   String
+  address     String
+  address2    String?
+  postal_code String
+  city        String
+  phone       String
+
+  // relaciones
+  country    Country @relation(fields: [country_id], references: [id])
+  country_id String
+  order      Order   @relation(fields: [order_id], references: [id])
+  order_id   String  @unique
+}
